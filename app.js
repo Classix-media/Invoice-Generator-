@@ -63,7 +63,9 @@
       <label>Package (optional)</label><input class="p" value="${esc(it.pkg)}" placeholder="e.g. Premium">
       <div class="row2"><div><label>Quantity</label><input class="q" inputmode="decimal" value="${esc(it.qty)}"></div><div><label>Unit price</label><input class="r" inputmode="decimal" value="${esc(it.price)}" placeholder="0.00"></div></div></div>`;
   }
-  function renderItems() { const box = $('items'); box.innerHTML = cur.items.map((it, k) => itemHtml(it, k, cur.items.length)).join('');
+  const MAX_ITEMS = 3;
+  function syncAdd() { const b = $('addItem'); if (!b) return; const full = cur.items.length >= MAX_ITEMS; b.disabled = full; b.textContent = full ? 'Maximum of 3 items reached' : '+ Add another line item'; }
+  function renderItems() { const box = $('items'); syncAdd(); box.innerHTML = cur.items.map((it, k) => itemHtml(it, k, cur.items.length)).join('');
     box.querySelectorAll('.rm').forEach((b, k) => b.onclick = () => { readForm(); cur.items.splice(k, 1); renderItems(); refresh(); }); }
   function fillForm() {
     const i = cur; $('cName').value = i.client.name; $('cEmail').value = i.client.email; $('cPhone').value = i.client.phone; $('cBiz').value = i.client.business;
@@ -109,7 +111,7 @@
   let refresh = function () { renderPreview(); renderStatus(); numberCheck(); };
   document.addEventListener('input', (e) => { if (!cur || !e.target.closest('#tabNew')) return; if (e.target.id === 'iNum') cur.autoNumber = false; readForm(); refresh(); });
   document.addEventListener('change', (e) => { if (!cur || !e.target.closest('#tabNew')) return; readForm(); refresh(); });
-  $('addItem').onclick = () => { readForm(); cur.items.push({ desc: '', pkg: '', qty: '1', price: '' }); renderItems(); refresh(); };
+  $('addItem').onclick = () => { readForm(); if (cur.items.length >= MAX_ITEMS) { syncAdd(); return; } cur.items.push({ desc: '', pkg: '', qty: '1', price: '' }); renderItems(); refresh(); };
 
 
   /* ---------- dashboard: payment journey bar + progress ring ---------- */
