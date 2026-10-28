@@ -171,3 +171,17 @@ label.btn,.filebtn{margin:0}
 #saveSettings{display:flex;width:100%;min-height:50px;margin:28px 0 0}
 @media(min-width:760px){#saveSettings{width:auto;min-width:200px}}
 #setMsg{margin-top:12px;text-align:left}
+
+/* ===== v13: one consistent layout on every device ===== */
+:root{--gut:clamp(16px,4.2vw,28px);--wrap:1184px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-width:320px;overflow-x:hidden}
+.top{padding-left:max(var(--gut),calc((100% - var(--wrap))/2))!important;padding-right:max(var(--gut),calc((100% - var(--wrap))/2))!important}
+.tabs{padding-left:max(var(--gut),calc((100% - var(--wrap))/2))!important;padding-right:max(var(--gut),calc((100% - var(--wrap))/2))!important}
+main:not(.grid):not(.login),.dash{width:100%;margin-left:auto!important;margin-right:auto!important;padding-left:var(--gut)!important;padding-right:var(--gut)!important}
+.dash{max-width:var(--wrap)!important}
+.grid{width:100%;max-width:var(--wrap)!important;padding-left:var(--gut)!important;padding-right:var(--gut)!important}
+.login{padding-left:var(--gut);padding-right:var(--gut)}
+.card,.tile,.li,.sum-i,.item{min-width:0}
+.card,.li,.tile{overflow-wrap:anywhere}
+img,canvas,svg{max-width:100%}
