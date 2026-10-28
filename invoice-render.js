@@ -5,6 +5,7 @@
   'use strict';
   const BL = '#005fff', PAGE = 141.42, SANS = '"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif', IMP = 'Impact,Anton,"Haettenschweiler","Arial Narrow Bold",sans-serif';
 
+  const validPay = (u) => { try { const p = new URL(u); return p.protocol === 'https:' && /(^|\.)paystack\.(com|shop|co)$/i.test(p.hostname); } catch (_) { return false; } };
   function draw(canvas, m, opt) {
     opt = opt || {};
     const W = Math.round((opt.width || 600) * (opt.dpr || 1)), H = Math.round(W * PAGE / 100);
@@ -56,7 +57,7 @@
 
     /* client */
     txt('INVOICE TO:', 9, 39, { s: 2.4, w: 600 }); txt(String(m.client.name || 'CLIENT NAME').toUpperCase(), 9, 44.6, { s: 5.6, w: 700, max: 84 });
-    let y = 50; [m.client.business, m.client.email, m.client.phone].filter(Boolean).forEach((t) => { txt(t, 9, y, { s: 2, c: '#111', max: 84 }); y += 2.8; });
+    let y = 50; const cl = [m.client.email, m.client.phone, m.client.business].filter(Boolean).join(' \u00b7 '); if (cl) { txt(cl, 9, y, { s: 2, c: '#111', max: 84 }); y += 2.8; }
     y = Math.max(y + 3, 56.6);
 
     /* table */
@@ -64,7 +65,7 @@
     let cx = tx; heads.forEach((h, i) => { rect(cx, y, cw[i] - 0.4, hh, BL); txt(h, i ? cx + cw[i] / 2 : cx + 1.6, y + hh / 2, { s: 2.6, c: '#fff', a: i ? 'center' : 'left', max: cw[i] - 2 }); cx += cw[i]; });
     y += hh;
     m.items.forEach((it) => {
-      const sz = 2, dl = wrap(it.desc || '-', 400, sz, cw[0] - 3), pl = wrap(it.pkg || '', 400, sz, cw[1] - 2), n = Math.max(dl.length, pl.length, 1), lh = 2.8 * k, rh = Math.max(7 * k, n * lh + 3 * k);
+      const sz = 2, dl = wrap(it.desc || '-', 400, sz, cw[0] - 3), pl = wrap(it.pkg || '', 400, sz, cw[1] - 2), n = Math.max(dl.length, pl.length, 1), lh = 2.8 * k, rh = Math.max(8.4 * k, n * lh + 3.4 * k);
       let c2 = tx; const top = y + (rh - dl.length * lh) / 2 + lh / 2;
       dl.forEach((t, i) => txt(t, c2 + 1.6, top + i * lh, { s: sz, c: '#111' })); c2 += cw[0];
       const pt = y + (rh - pl.length * lh) / 2 + lh / 2; pl.forEach((t, i) => txt(t, c2 + cw[1] / 2, pt + i * lh, { s: sz, c: '#111', a: 'center' })); c2 += cw[1];
@@ -72,12 +73,12 @@
       txt(it.qty, c2 + cw[2] / 2, mid, { s: sz, c: '#111', a: 'center', max: cw[2] - 2 }); c2 += cw[2];
       txt(it.price, c2 + cw[3] / 2, mid, { s: sz, c: '#111', a: 'center', max: cw[3] - 2 }); c2 += cw[3];
       txt(it.line, c2 + cw[4] / 2, mid, { s: sz, w: 600, c: '#111', a: 'center', max: cw[4] - 2 });
-      y += rh; rect(tx, y, tw - 0.4, 0.12, '#dcdcdc');
+      y += rh;
     });
 
     /* notes */
     if (m.notes && m.notes.trim()) {
-      y += 4.6 * k; txt('PROJECT NOTES', 9, y, { s: 1.7, w: 600, c: BL }); y += 3.2 * k;
+      y += 4 * k; txt('PROJECT NOTES', 9, y, { s: 1.7, w: 600, c: BL }); y += 3.2 * k;
       wrap(m.notes, 400, 1.8, 82).slice(0, 6).forEach((t) => { txt(t, 9, y, { s: 1.8, c: '#333' }); y += 2.6 * k; });
     }
     y = Math.max(y + 2 * k, 83.1); rect(5.4, y, 89.2, 1, '#555'); y = Math.max(y + 1 + 3.4 * k, 94);
@@ -89,21 +90,33 @@
       txt(b[0], 3.6, y + bh / 2, { s: 2.7, w: 600, c: blue ? '#fff' : '#000' }); txt(b[1], 95, y + bh / 2, { s: 2.3, c: blue ? '#fff' : '#000', a: 'right', max: 60 }); y += bh;
     });
     rect(0, y, 100, 135.4 - y, '#fff');           // white footer, edge to edge, like the website
-    y += 4 * k;
+    const unpaid = !m.paid, FS = unpaid ? 1.2 : 0, pillTop = y + (unpaid ? 3.7 : 6.1); y = pillTop;
 
     /* footer: grey pill, payment info, signature */
-    const lines = wrap(m.gray, 500, 1.7, 49), lh = 2.4, ph = lines.length * lh + 2.8; rr(4, y, 54, ph, 2.6, '#767676');
-    lines.forEach((s, i) => txt(s, 31, y + 1.4 + (i + 0.5) * lh, { s: 1.7, w: 500, c: '#fff', a: 'center' })); y += ph + 3.4 * k;
+    const lines = wrap(m.gray, 500, 1.7, 49), lh = 2.4, ph = lines.length * lh + 2.8; rr(4, y, 54, ph, 1.5, '#767676');
+    lines.forEach((s, i) => txt(s, 31, y + 1.4 + (i + 0.5) * lh, { s: 1.7, w: 500, c: '#fff', a: 'center' }));
+    if (unpaid) {
+      y += ph + 1.4; const bh2 = 5, ok = m.payLink && validPay(m.payLink);
+      rr(4, y, 54, bh2, 1.5, ok ? BL : '#b45309');
+      txt(ok ? 'CLICK HERE TO PAY ONLINE' : 'Payment link required before sending', 31, y + bh2 / 2, { s: ok ? 2 : 1.6, w: 700, c: '#fff', a: 'center', max: 50 });
+      if (ok) {
+        links.push({ x: 4, y: y, w: 54, h: bh2, uri: m.payLink });
+        const q = root.IVQR && root.IVQR.encode(m.payLink), qs = 10, qx = 80.5, qy = pillTop;
+        if (q) { const mod = qs / q.length; x.fillStyle = '#000'; q.forEach((row, ry) => row.forEach((on, c2) => { if (on) x.fillRect((qx + c2 * mod) * u, (qy + ry * mod) * u, mod * u + 0.6, mod * u + 0.6); })); txt('Scan to pay securely', qx + qs / 2, qy - 1.7, { s: 1.4, w: 500, c: '#222', a: 'center' }); }
+      }
+      y += bh2 + 1.2 * k;
+    } else y += ph + 3.4 * k;
     const block = (title, ls, link) => {
       if (!ls.length) return; txt(title, 9, y, { s: 1.7, w: 600, c: BL }); y += 3 * k;
       ls.forEach((t) => { const r = txt(t, 9, y, { s: 1.8, c: link ? BL : '#222' }); if (link) links.push({ x: r.x, y: y - 1.4, w: r.w, h: 2.8, uri: link }); y += 2.6 * k; }); y += 1.4 * k;
     };
     if (m.paid) block('PAYMENT RECEIVED', ['Thank you. This invoice has been paid in full.'].concat(m.paymentRef ? ['Reference: ' + m.paymentRef] : []));
-    else { if (m.payLink) block('PAY ONLINE (Paystack secure link)', wrap(m.payLink, 400, 1.8, 62), m.payLink); block('PAYMENT DETAILS', (m.payDetails || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean)); }
+    else {
+      block('PAYMENT DETAILS', (m.payDetails || '').split(/\r?\n/).map((s) => s.trim()).filter(Boolean)); }
     if (m.terms) block('NOTES', wrap(m.terms, 400, 1.7, 62));
-    const contact = [m.biz.phone, m.biz.email].filter(Boolean).join('  ·  '); if (contact) txt(contact, 9, 133.1, { s: 1.5, c: '#444', max: 58 });
-    rect(75, 131.2, 21, 0.35, '#111'); txt('Authorized Signed', 85.5, 133.1, { s: 1.5, i: true, c: '#111', a: 'center' });
-    return { k, overflow: y > 130.4, links };
+    
+    rect(75, 131.2 + FS, 21, 0.35, '#111'); txt('Authorized Signed', 85.5, 133.1 + FS, { s: 1.5, i: true, c: '#111', a: 'center' });
+    return { k, overflow: y > (unpaid ? 132.6 : 130.4), links };
   }
   root.IVInvoice = { draw, PAGE };
 })(typeof window !== 'undefined' ? window : globalThis);

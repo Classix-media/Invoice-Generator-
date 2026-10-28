@@ -94,9 +94,10 @@
     const w = $('calcWarn'); w.hidden = !calc.warnings.length; w.textContent = calc.warnings.join(' ');
   }
   let rz; try { new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(drawPreview); }).observe($('invWrap')); } catch (_) {}
-  try { document.fonts.load('400 20px Impact'); document.fonts.load('400 20px "Inter Tight"'); document.fonts.load('700 20px "Inter Tight"'); document.fonts.ready.then(() => drawPreview()); } catch (_) {}
+  const ensureFonts = () => Promise.all(['400 20px Anton', '400 20px "Inter Tight"', '500 20px "Inter Tight"', '600 20px "Inter Tight"', '700 20px "Inter Tight"'].map((f) => document.fonts.load(f))).then(() => document.fonts.ready).catch(() => {});
+  ensureFonts().then(() => drawPreview());
   function renderStatus() {
-    const s = effStatus(cur), b = $('statusBadge'); b.textContent = LABEL[s]; b.className = 'badge ' + s;
+    const s = effStatus(cur), b = $('statusBadge'); { const v = view(); $('sumTotal').textContent = v.fm(v.calc.total); $('sumStatus').innerHTML = `<span class="badge ${s}">${LABEL[s]}</span>`; $('sumDue').textContent = cur.due ? C.dateText(cur.due) : '—'; $('sumClient').textContent = cur.client.name || '—'; } b.textContent = LABEL[s]; b.className = 'badge ' + s;
     $('checkPay').disabled = !(cur.paymentRef && cur.status !== 'paid'); $('makeLink').disabled = cur.status === 'paid';
     const stale = cur.paymentRef && cur.linkAmount != null && (Math.round(cur.linkAmount * 100) !== view().calc.total || cur.linkCurrency !== cur.currency);
     if (stale) say('linkMsg', 'The total changed after this link was created. Create a new link before sending, or the client will be asked for the old amount.', 'warn');
@@ -146,7 +147,7 @@
   }
   async function makePdf() {
     if (!cur.items.some((it) => (it.desc || '').trim())) throw new Error('empty');
-    await loadLogo(); try { await Promise.all([document.fonts.load('400 40px Anton'), document.fonts.load('400 40px "Inter Tight"'), document.fonts.load('500 40px "Inter Tight"'), document.fonts.load('700 40px "Inter Tight"')]); } catch (_) {}
+    await loadLogo(); await ensureFonts();
     const cv = document.createElement('canvas'); window.IVInvoice.draw(cv, invModel(), { width: 1654, dpr: 1, logo });
     const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.93)); const jpeg = new Uint8Array(await blob.arrayBuffer());
     const links = window.IVInvoice.draw(document.createElement('canvas'), invModel(), { width: 400, dpr: 1, logo }).links;
@@ -160,7 +161,7 @@
   async function downloadPdf() { const f = await makePdf(); saveFile(f); return f; }
   $('genPdf').onclick = async () => {
     readForm(); const err = validate(); if (err) return say('actMsg', err, 'bad');
-    try { const f = await makePdf(); persist('awaiting'); saveFile(f); say('actMsg', `Downloaded ${f.name}. Saved as “${LABEL[effStatus(cur)]}”.`, 'ok'); }
+    try { const f = await makePdf(); persist('awaiting'); saveFile(f); const hasLink = /^https:\/\/([a-z0-9-]+\.)*paystack\.(com|shop|co)\b/i.test(cur.paymentLink || ''); say('actMsg', hasLink ? `Downloaded ${f.name}. Saved as “${LABEL[effStatus(cur)]}”.` : `Downloaded ${f.name}, but it has NO payment link. Create or paste a Paystack link first, then download again.`, hasLink ? 'ok' : 'warn'); }
     catch (e) { say('actMsg', 'Could not create the PDF. Please try again.', 'bad'); }
   };
   const waText = () => { const t = view(); return `Hello ${cur.client.name || ''}, here is invoice ${cur.number} from ${settings.name} for ${C.fmtPdf(t.calc.total, cur.currency)}${cur.due ? ', due ' + C.dateText(cur.due) : ''}.${cur.paymentLink && cur.status !== 'paid' ? '\nPay securely online: ' + cur.paymentLink : ''}\nThank you.`; };

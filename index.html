@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script>try{var t=localStorage.getItem('ivgen.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
@@ -87,7 +87,20 @@
       <p class="msg" id="linkMsg" role="status"></p>
     </div>
 
-    <div class="card sticky-actions">
+  </section>
+
+  <section class="col-prev">
+    <div class="prev-head"><span class="eyebrow">Live preview</span><span class="chip-static">A4 · 1 page</span></div>
+    <div class="invwrap" id="invWrap"><canvas id="invCanvas" aria-label="Invoice preview"></canvas></div>
+    <p class="msg warn" id="fitWarn" hidden>This much content does not fit one page comfortably. Shorten the notes or combine line items.</p>
+    <p class="muted small center">The preview is exactly what the PDF contains.</p>
+    <div class="sum">
+      <div class="sum-i main"><span>Total due</span><b id="sumTotal">—</b></div>
+      <div class="sum-i"><span>Status</span><b id="sumStatus">—</b></div>
+      <div class="sum-i"><span>Due date</span><b id="sumDue">—</b></div>
+      <div class="sum-i"><span>Client</span><b id="sumClient">—</b></div>
+    </div>
+    <div class="card actions">
       <button type="button" class="btn primary big" id="genPdf">Generate PDF Invoice</button>
       <div class="btns g2">
         <button type="button" class="btn" id="sharePdf">Share PDF</button>
@@ -97,13 +110,7 @@
       </div>
       <p class="msg" id="actMsg" role="status"></p>
     </div>
-  </section>
 
-  <section class="col-prev">
-    <div class="prev-head"><span class="eyebrow">Live preview</span><span class="chip-static">A4 · 1 page</span></div>
-    <div class="invwrap" id="invWrap"><canvas id="invCanvas" aria-label="Invoice preview"></canvas></div>
-    <p class="msg warn" id="fitWarn" hidden>This much content does not fit one page comfortably. Shorten the notes or combine line items.</p>
-    <p class="muted small center">The preview is exactly what the PDF contains.</p>
   </section>
 </main>
 
@@ -137,6 +144,6 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="calc.js?v=3"></script><script src="invoice-render.js?v=3"></script><script src="pdf.js?v=3"></script><script src="app.js?v=3"></script>
+<script src="calc.js?v=4"></script><script src="qr.js?v=4"></script><script src="invoice-render.js?v=4"></script><script src="pdf.js?v=4"></script><script src="app.js?v=4"></script>
 </body>
 </html>
