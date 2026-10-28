@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#005fff" id="themeColor">
+<title>Implify Visuals · Invoice Generator</title>
+<link rel="icon" href="images/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+<script>try{var t=localStorage.getItem('ivgen.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="images/logo.jpg" alt="" width="34" height="34"><div><strong>Implify Visuals</strong><small>Invoice Generator</small></div></div>
+  <div class="top-actions">
+    <button type="button" id="themeBtn" class="icon-btn" aria-label="Switch light or dark mode" title="Light / dark mode"><span id="themeIcon">🌙</span><span id="themeTxt">Dark</span></button>
+    <button type="button" id="lockBtn" class="icon-btn" hidden>Lock</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<main id="loginView" class="login" hidden>
+  <form id="loginForm" class="card login-card" autocomplete="off">
+    <img src="images/logo.jpg" alt="Implify Visuals" width="72" height="72">
+    <h1>Private invoice workspace</h1>
+    <p class="muted">Enter your access password to continue.</p>
+    <label for="pw">Access password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button class="btn primary" type="submit" id="loginBtn">Unlock</button>
+    <p class="msg" id="loginMsg" role="alert"></p>
+  </form>
+</main>
+
+<!-- APP -->
+<div id="appView" hidden>
+<nav class="tabs" role="tablist">
+  <button type="button" class="tab on" data-tab="new">New invoice</button>
+  <button type="button" class="tab" data-tab="list">Invoices <span class="count" id="listCount">0</span></button>
+  <button type="button" class="tab" data-tab="settings">Settings</button>
+</nav>
+
+<main id="tabNew" class="grid">
+  <section class="col-form">
+    <div class="card">
+      <h2>Client details</h2>
+      <label for="cName">Client's full name</label><input id="cName" autocomplete="off" placeholder="e.g. Ada Obi">
+      <div class="row2"><div><label for="cEmail">Email address</label><input id="cEmail" type="email" inputmode="email" autocomplete="off" placeholder="client@example.com"></div>
+      <div><label for="cPhone">Phone / WhatsApp</label><input id="cPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="0801 234 5678"></div></div>
+      <label for="cBiz">Business name (optional)</label><input id="cBiz" autocomplete="off">
+    </div>
+
+    <div class="card">
+      <h2>Invoice details</h2>
+      <div class="row2"><div><label for="iNum">Invoice number</label><input id="iNum" autocomplete="off"></div>
+      <div><label for="iCur">Currency</label><select id="iCur"><option value="NGN">₦ Nigerian naira (NGN)</option><option value="USD">$ US dollars (USD)</option></select></div></div>
+      <div class="row2"><div><label for="iIssue">Issue date</label><input id="iIssue" type="date"></div>
+      <div><label for="iDue">Payment due date</label><input id="iDue" type="date"></div></div>
+      <p class="msg warn" id="numWarn" hidden></p>
+    </div>
+
+    <div class="card">
+      <h2>Project details</h2>
+      <div id="items"></div>
+      <button type="button" class="btn ghost" id="addItem">+ Add another line item</button>
+      <label for="iNotes">Project description / notes</label>
+      <textarea id="iNotes" rows="4" placeholder="Scope, deliverables, timeline…"></textarea>
+      <div class="row2"><div><label for="dType">Discount type</label><select id="dType"><option value="amount">Amount</option><option value="percent">Percent (%)</option></select></div>
+      <div><label for="dVal">Discount (optional)</label><input id="dVal" inputmode="decimal" placeholder="0"></div></div>
+      <label for="tPct">Tax % (only if applicable)</label><input id="tPct" inputmode="decimal" placeholder="0">
+      <div class="totals" id="totalsBox"></div>
+      <p class="msg warn" id="calcWarn" hidden></p>
+    </div>
+
+    <div class="card">
+      <h2>Payment</h2>
+      <p class="muted small">Status: <span id="statusBadge" class="badge"></span></p>
+      <label for="payLink">Paystack payment link</label>
+      <input id="payLink" inputmode="url" autocomplete="off" placeholder="https://checkout.paystack.com/…  or paste your own link">
+      <div class="btns">
+        <button type="button" class="btn" id="makeLink">Create Paystack link</button>
+        <button type="button" class="btn ghost" id="copyLink">Copy link</button>
+        <button type="button" class="btn ghost" id="checkPay">Check payment</button>
+      </div>
+      <p class="muted small" id="linkHelp">Links created here are checked automatically. A link you paste yourself cannot be verified here, so the invoice stays “awaiting payment”.</p>
+      <p class="msg" id="linkMsg" role="status"></p>
+    </div>
+
+    <div class="card sticky-actions">
+      <button type="button" class="btn primary big" id="genPdf">Generate PDF Invoice</button>
+      <div class="btns">
+        <button type="button" class="btn" id="sharePdf">Share PDF</button>
+        <button type="button" class="btn" id="waBtn">Send on WhatsApp</button>
+        <button type="button" class="btn ghost" id="saveDraft">Save draft</button>
+        <button type="button" class="btn ghost" id="newInv">New invoice</button>
+      </div>
+      <p class="msg" id="actMsg" role="status"></p>
+    </div>
+  </section>
+
+  <section class="col-prev">
+    <h2 class="prev-title">Live preview</h2>
+    <div class="invwrap" id="invWrap"><div class="inv" id="inv"></div></div>
+    <p class="muted small center">The invoice always uses the print-friendly blue-and-white design, in light or dark mode.</p>
+  </section>
+</main>
+
+<main id="tabList" hidden>
+  <div class="card">
+    <h2>Saved invoices</h2>
+    <input id="q" type="search" placeholder="Search by client or invoice number">
+    <div class="chips" id="chips"></div>
+    <div id="listBox"></div>
+  </div>
+</main>
+
+<main id="tabSettings" hidden>
+  <div class="card">
+    <h2>Business details (shown on every invoice)</h2>
+    <label for="sName">Business name</label><input id="sName">
+    <div class="row2"><div><label for="sEmail">Email</label><input id="sEmail" type="email"></div><div><label for="sPhone">Phone / WhatsApp</label><input id="sPhone"></div></div>
+    <label for="sPay">Payment details (bank transfer)</label>
+    <textarea id="sPay" rows="4" placeholder="Bank: …&#10;Account name: …&#10;Account number: …"></textarea>
+    <label for="sTerms">Extra note at the bottom (optional)</label><textarea id="sTerms" rows="2"></textarea>
+    <div class="row2"><div><label for="sCur">Default currency</label><select id="sCur"><option>NGN</option><option>USD</option></select></div>
+    <div><label for="sNext">Next invoice number</label><input id="sNext" inputmode="numeric"></div></div>
+    <button type="button" class="btn primary" id="saveSettings">Save settings</button>
+    <p class="msg" id="setMsg" role="status"></p>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="muted small">Invoices are stored only on this phone/browser, never on a server. Export a backup now and then.</p>
+    <div class="btns"><button type="button" class="btn" id="expBtn">Export backup</button><label class="btn ghost filebtn">Import backup<input type="file" id="impFile" accept="application/json" hidden></label></div>
+  </div>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="calc.js?v=1"></script><script src="pdf.js?v=1"></script><script src="app.js?v=1"></script>
+</body>
+</html>
