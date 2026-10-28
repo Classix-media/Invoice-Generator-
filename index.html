@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script>try{var t=localStorage.getItem('ivgen.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
@@ -36,12 +36,26 @@
 <!-- APP -->
 <div id="appView" class="page" hidden>
 <nav class="tabs" role="tablist">
-  <button type="button" class="tab on" data-tab="new">New invoice</button>
+  <button type="button" class="tab on" data-tab="dash">Home</button>
+  <button type="button" class="tab" data-tab="new">New</button>
   <button type="button" class="tab" data-tab="list">Invoices <span class="count" id="listCount">0</span></button>
   <button type="button" class="tab" data-tab="settings">Settings</button>
 </nav>
 
-<main id="tabNew" class="grid">
+<main id="tabDash" class="dash">
+  <div class="hello"><span class="eyebrow">Overview</span><h1 id="helloName">Welcome back</h1></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="dash-grid">
+    <section class="card ringcard"><div class="rc-head"><h2>Payment report</h2><span class="chip-static" id="ringCur">NGN</span></div>
+      <div class="ring-wrap"><svg class="ring" viewBox="0 0 140 140" aria-hidden="true"><circle class="rt" cx="70" cy="70" r="54"/><circle class="rs s-paid" cx="70" cy="70" r="54"/><circle class="rs s-wait" cx="70" cy="70" r="54"/><circle class="rs s-over" cx="70" cy="70" r="54"/></svg>
+        <div class="ring-c"><b id="ringPct">0%</b><span>collected</span></div></div>
+      <div class="legend" id="legend"></div></section>
+    <section class="card"><div class="rc-head"><h2>Payment journey</h2><span class="muted small" id="dashFlowLbl"></span></div><div id="dashFlow"></div>
+      <h2 class="sub">Recent invoices</h2><div id="recent"></div></section>
+  </div>
+</main>
+
+<main id="tabNew" class="grid" hidden>
   <section class="col-form">
     <div class="card">
       <div class="sec"><span class="no">01</span><h2>Client details</h2></div>
@@ -94,6 +108,7 @@
     <div class="invwrap" id="invWrap"><canvas id="invCanvas" aria-label="Invoice preview"></canvas></div>
     <p class="msg warn" id="fitWarn" hidden>This much content does not fit one page comfortably. Shorten the notes or combine line items.</p>
     <p class="muted small center">The preview is exactly what the PDF contains.</p>
+    <div class="card flowcard"><div class="rc-head"><h2>Payment journey</h2></div><div id="curFlow"></div></div>
     <div class="sum">
       <div class="sum-i main"><span>Total due</span><b id="sumTotal">—</b></div>
       <div class="sum-i"><span>Status</span><b id="sumStatus">—</b></div>
@@ -144,6 +159,6 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="calc.js?v=4"></script><script src="qr.js?v=4"></script><script src="invoice-render.js?v=4"></script><script src="pdf.js?v=4"></script><script src="app.js?v=4"></script>
+<script src="calc.js?v=5"></script><script src="qr.js?v=5"></script><script src="invoice-render.js?v=5"></script><script src="pdf.js?v=5"></script><script src="app.js?v=5"></script>
 </body>
 </html>
