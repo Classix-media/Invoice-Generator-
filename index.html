@@ -6,36 +6,35 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#005fff" id="themeColor">
 <title>Implify Visuals · Invoice Generator</title>
-<link rel="icon" href="images/favicon.png">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
 <script>try{var t=localStorage.getItem('ivgen.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
 <header class="top">
-  <div class="brand"><img src="images/logo.jpg" alt="" width="34" height="34"><div><strong>Implify Visuals</strong><small>Invoice Generator</small></div></div>
-  <div class="top-actions">
-    <button type="button" id="themeBtn" class="icon-btn" aria-label="Switch light or dark mode" title="Light / dark mode"><span id="themeIcon">🌙</span><span id="themeTxt">Dark</span></button>
-    <button type="button" id="lockBtn" class="icon-btn" hidden>Lock</button>
-  </div>
+  <div class="brand"><img src="images/logo.png" alt="" width="34" height="34"><div><strong>Implify Visuals</strong><small>Invoice Generator</small></div></div>
+  <div class="top-actions"><button type="button" id="themeBtn" class="icon-btn" aria-label="Switch light or dark mode"><span id="themeIcon">🌙</span><span id="themeTxt">Dark</span></button><button type="button" id="lockBtn" class="icon-btn" hidden>Lock</button></div>
 </header>
 
 <!-- LOGIN -->
 <main id="loginView" class="login" hidden>
   <form id="loginForm" class="card login-card" autocomplete="off">
-    <img src="images/logo.jpg" alt="Implify Visuals" width="72" height="72">
-    <h1>Private invoice workspace</h1>
+    <img src="images/logo.png" alt="Implify Visuals" width="64" height="64">
+    <span class="eyebrow">Private workspace</span>
+    <h1>Invoice Generator</h1>
     <p class="muted">Enter your access password to continue.</p>
     <label for="pw">Access password</label>
-    <input id="pw" type="password" autocomplete="current-password" required>
-    <button class="btn primary" type="submit" id="loginBtn">Unlock</button>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Password" required>
+    <button class="btn primary big" type="submit" id="loginBtn">Unlock</button>
     <p class="msg" id="loginMsg" role="alert"></p>
   </form>
 </main>
 
 <!-- APP -->
-<div id="appView" hidden>
+<div id="appView" class="page" hidden>
 <nav class="tabs" role="tablist">
   <button type="button" class="tab on" data-tab="new">New invoice</button>
   <button type="button" class="tab" data-tab="list">Invoices <span class="count" id="listCount">0</span></button>
@@ -45,7 +44,7 @@
 <main id="tabNew" class="grid">
   <section class="col-form">
     <div class="card">
-      <h2>Client details</h2>
+      <div class="sec"><span class="no">01</span><h2>Client details</h2></div>
       <label for="cName">Client's full name</label><input id="cName" autocomplete="off" placeholder="e.g. Ada Obi">
       <div class="row2"><div><label for="cEmail">Email address</label><input id="cEmail" type="email" inputmode="email" autocomplete="off" placeholder="client@example.com"></div>
       <div><label for="cPhone">Phone / WhatsApp</label><input id="cPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="0801 234 5678"></div></div>
@@ -53,7 +52,7 @@
     </div>
 
     <div class="card">
-      <h2>Invoice details</h2>
+      <div class="sec"><span class="no">02</span><h2>Invoice details</h2></div>
       <div class="row2"><div><label for="iNum">Invoice number</label><input id="iNum" autocomplete="off"></div>
       <div><label for="iCur">Currency</label><select id="iCur"><option value="NGN">₦ Nigerian naira (NGN)</option><option value="USD">$ US dollars (USD)</option></select></div></div>
       <div class="row2"><div><label for="iIssue">Issue date</label><input id="iIssue" type="date"></div>
@@ -62,7 +61,7 @@
     </div>
 
     <div class="card">
-      <h2>Project details</h2>
+      <div class="sec"><span class="no">03</span><h2>Project details</h2></div>
       <div id="items"></div>
       <button type="button" class="btn ghost" id="addItem">+ Add another line item</button>
       <label for="iNotes">Project description / notes</label>
@@ -75,12 +74,12 @@
     </div>
 
     <div class="card">
-      <h2>Payment</h2>
+      <div class="sec"><span class="no">04</span><h2>Payment</h2></div>
       <p class="muted small">Status: <span id="statusBadge" class="badge"></span></p>
       <label for="payLink">Paystack payment link</label>
       <input id="payLink" inputmode="url" autocomplete="off" placeholder="https://checkout.paystack.com/…  or paste your own link">
-      <div class="btns">
-        <button type="button" class="btn" id="makeLink">Create Paystack link</button>
+      <div class="btns g2">
+        <button type="button" class="btn wide" id="makeLink">Create Paystack link</button>
         <button type="button" class="btn ghost" id="copyLink">Copy link</button>
         <button type="button" class="btn ghost" id="checkPay">Check payment</button>
       </div>
@@ -90,7 +89,7 @@
 
     <div class="card sticky-actions">
       <button type="button" class="btn primary big" id="genPdf">Generate PDF Invoice</button>
-      <div class="btns">
+      <div class="btns g2">
         <button type="button" class="btn" id="sharePdf">Share PDF</button>
         <button type="button" class="btn" id="waBtn">Send on WhatsApp</button>
         <button type="button" class="btn ghost" id="saveDraft">Save draft</button>
@@ -101,9 +100,10 @@
   </section>
 
   <section class="col-prev">
-    <h2 class="prev-title">Live preview</h2>
-    <div class="invwrap" id="invWrap"><div class="inv" id="inv"></div></div>
-    <p class="muted small center">The invoice always uses the print-friendly blue-and-white design, in light or dark mode.</p>
+    <div class="prev-head"><span class="eyebrow">Live preview</span><span class="chip-static">A4 · 1 page</span></div>
+    <div class="invwrap" id="invWrap"><canvas id="invCanvas" aria-label="Invoice preview"></canvas></div>
+    <p class="msg warn" id="fitWarn" hidden>This much content does not fit one page comfortably. Shorten the notes or combine line items.</p>
+    <p class="muted small center">The preview is exactly what the PDF contains.</p>
   </section>
 </main>
 
@@ -137,6 +137,6 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="calc.js?v=1"></script><script src="pdf.js?v=1"></script><script src="app.js?v=1"></script>
+<script src="calc.js?v=3"></script><script src="invoice-render.js?v=3"></script><script src="pdf.js?v=3"></script><script src="app.js?v=3"></script>
 </body>
 </html>

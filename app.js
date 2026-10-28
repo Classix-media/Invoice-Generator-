@@ -71,37 +71,30 @@
 
   /* ---------- preview + totals ---------- */
   const view = () => { const calc = C.compute(cur); return { calc, fm: (m) => C.fmt(m, cur.currency) }; };
-  function pdfModel() {
-    const { calc } = view(), c = cur.currency;
-    return { inv: { number: cur.number, status: cur.status, issueText: C.dateText(cur.issue), dueText: C.dateText(cur.due), client: cur.client, notes: cur.notes, taxPct: C.num(cur.taxPct, 100), paymentLink: cur.paymentLink, paymentRef: cur.paymentRef,
-      items: cur.items.map((it, k) => ({ desc: it.desc, pkg: it.pkg, qtyText: String(C.num(it.qty)), priceText: C.fmtPdf(C.toMinor(it.price), c), lineText: C.fmtPdf(calc.lines[k], c) })) },
-      calc, fmt: (m) => C.fmtPdf(m, c) };
+  function invModel() {
+    const { calc, fm } = view(), paid = cur.status === 'paid';
+    const bands = [['SUBTOTAL:', fm(calc.subtotal)], ['DISCOUNT:', calc.discount > 0 ? '-' + fm(calc.discount) : '—']];
+    if (calc.tax > 0) bands.push([`TAX (${C.num(cur.taxPct, 100)}%):`, fm(calc.tax)]);
+    bands.push([paid ? 'TOTAL PAID:' : 'TOTAL DUE:', fm(calc.total)]);
+    return { paid, title: paid ? 'PAID INVOICE' : 'INVOICE', number: cur.number, issue: C.dateText(cur.issue), due: C.dateText(cur.due),
+      biz: { name: settings.name, phone: settings.phone, email: settings.email }, client: cur.client,
+      items: cur.items.map((it, k) => ({ desc: it.desc, pkg: it.pkg, qty: String(C.num(it.qty)), price: fm(C.toMinor(it.price)), line: fm(calc.lines[k]) })),
+      notes: cur.notes, bands, gray: 'Payment is required before project work begins.' + (cur.status === 'cancelled' ? ' This invoice has been cancelled.' : ''),
+      payLink: cur.paymentLink, paymentRef: cur.paymentRef, payDetails: (settings.paymentDetails || '').trim(), terms: settings.terms };
+  }
+  function drawPreview() {
+    const cv = $('invCanvas'), wrap = $('invWrap'); if (!cv || !cur) return;
+    const w = wrap.clientWidth || 360, r = window.IVInvoice.draw(cv, invModel(), { width: w, dpr: Math.min(window.devicePixelRatio || 1, 2.5), logo });
+    const f = $('fitWarn'); f.hidden = !r.overflow;
   }
   function renderPreview() {
-    const { calc, fm } = view(), paid = cur.status === 'paid', num = esc(cur.number), cl = cur.client;
-    const rows = cur.items.map((it, k) => `<tr><td>${esc(it.desc) || '—'}</td><td>${esc(it.pkg)}</td><td>${esc(C.num(it.qty))}</td><td>${fm(C.toMinor(it.price))}</td><td>${fm(calc.lines[k])}</td></tr>`).join('');
-    const bands = [['SUBTOTAL:', fm(calc.subtotal)], ['DISCOUNT:', calc.discount > 0 ? '-' + fm(calc.discount) : '—']];
-    if (calc.tax > 0) bands.push([`TAX (${esc(C.num(cur.taxPct, 100))}%):`, fm(calc.tax)]);
-    bands.push([paid ? 'TOTAL PAID:' : 'TOTAL DUE:', fm(calc.total)]);
-    const bandHtml = bands.map((b, k) => `<div class="band ${k % 2 === 0 || k === bands.length - 1 ? 'bl' : 'wh'}"><b>${b[0]}</b><span>${b[1]}</span></div>`).join('');
-    const pay = (settings.paymentDetails || '').trim();
-    $('inv').innerHTML = `<div class="panel"><div class="logo"><img src="images/logo.jpg" alt=""><b>${esc(settings.name)}</b><small>${esc(settings.phone)}<br>${esc(settings.email)}</small></div>
-      <div class="corner"><span class="pill" id="pillEl">${num}</span><div class="dates" id="datesEl"><div><b>ISSUED:</b> ${esc(C.dateText(cur.issue))}</div><div><b>DUE:</b> ${esc(C.dateText(cur.due))}</div></div><div class="ttl" id="ttlEl">${paid ? 'PAID INVOICE' : 'INVOICE'}</div></div>
-      <div class="body"><div class="to">INVOICE TO:</div><div class="nm">${esc(cl.name) || 'CLIENT NAME'}</div><div class="ct">${[cl.business, cl.email, cl.phone].filter(Boolean).map(esc).join('<br>')}</div>
-      <table><colgroup><col style="width:34%"><col style="width:16%"><col style="width:10%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>Description</th><th>Package</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table>
-      ${cur.notes.trim() ? `<div class="nt"><h4>PROJECT NOTES</h4><p>${esc(cur.notes)}</p></div>` : ''}<div class="rule"></div><div class="bands">${bandHtml}</div></div>
-      <div class="foot"><span class="gp">Payment is required before project work begins.${cur.status === 'cancelled' ? ' This invoice has been cancelled.' : ''}</span>
-      <div class="fb">${paid ? `<h4>PAYMENT RECEIVED</h4><p>Thank you. This invoice has been paid in full.${cur.paymentRef ? '\nReference: ' + esc(cur.paymentRef) : ''}</p>` : `${cur.paymentLink ? `<h4>PAY ONLINE (Paystack secure link)</h4><p><a href="${esc(cur.paymentLink)}" target="_blank" rel="noopener">${esc(cur.paymentLink)}</a></p>` : ''}${pay ? `<h4>PAYMENT DETAILS</h4><p>${esc(pay)}</p>` : ''}`}${settings.terms ? `<h4>NOTES</h4><p>${esc(settings.terms)}</p>` : ''}</div>
-      <div class="sig">Authorized Signed</div></div></div>`;
-    sizePreview();
-    const p = $('pillEl'); if (p) $('inv').style.setProperty('--pw', p.offsetWidth + 'px');
-    const t = $('ttlEl'); if (t) { const max = $('inv').clientWidth * 0.578; let fs = parseFloat(getComputedStyle(t).fontSize); const w = t.scrollWidth; if (w > max) t.style.fontSize = (fs * max / w) + 'px'; }
+    const { calc, fm } = view(), paid = cur.status === 'paid';
+    drawPreview();
     $('totalsBox').innerHTML = `<div><span>Subtotal</span><span>${fm(calc.subtotal)}</span></div><div><span>Discount</span><span>${calc.discount ? '-' + fm(calc.discount) : '—'}</span></div>${calc.tax ? `<div><span>Tax</span><span>${fm(calc.tax)}</span></div>` : ''}<div class="t"><span>${paid ? 'Total paid' : 'Total due'}</span><span>${fm(calc.total)}</span></div>`;
     const w = $('calcWarn'); w.hidden = !calc.warnings.length; w.textContent = calc.warnings.join(' ');
   }
-  function sizePreview() { const w = $('invWrap').clientWidth || 360; $('inv').style.setProperty('--u', (w / 100) + 'px'); }
-  try { new ResizeObserver(() => { if (cur) { sizePreview(); const p = $('pillEl'); if (p) $('inv').style.setProperty('--pw', p.offsetWidth + 'px'); } }).observe($('invWrap')); } catch (_) {}
-
+  let rz; try { new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(drawPreview); }).observe($('invWrap')); } catch (_) {}
+  try { document.fonts.load('400 20px Impact'); document.fonts.load('400 20px "Inter Tight"'); document.fonts.load('700 20px "Inter Tight"'); document.fonts.ready.then(() => drawPreview()); } catch (_) {}
   function renderStatus() {
     const s = effStatus(cur), b = $('statusBadge'); b.textContent = LABEL[s]; b.className = 'badge ' + s;
     $('checkPay').disabled = !(cur.paymentRef && cur.status !== 'paid'); $('makeLink').disabled = cur.status === 'paid';
@@ -148,12 +141,17 @@
   /* ---------- PDF / share ---------- */
   async function loadLogo() {
     if (logo) return logo;
-    try { const r = await fetch('images/logo.jpg'); const b = new Uint8Array(await r.arrayBuffer()); logo = { bytes: b, w: 640, h: 640 }; } catch (_) { logo = null; } return logo;
+    await new Promise((res) => { const im = new Image(); im.onload = () => { logo = im; res(); }; im.onerror = res; im.src = 'images/logo.png'; });
+    return logo;
   }
   async function makePdf() {
-    const v = pdfModel(); if (!v.inv.items.length) throw new Error('empty');
-    const blob = P.buildInvoicePdf(v.inv, v.calc, { name: settings.name, email: settings.email, phone: settings.phone, paymentDetails: settings.paymentDetails, terms: settings.terms }, v.fmt, await loadLogo());
-    return new File([blob], `Implify-Visuals-Invoice-${cur.number.replace(/[^A-Za-z0-9._-]/g, '-')}.pdf`, { type: 'application/pdf' });
+    if (!cur.items.some((it) => (it.desc || '').trim())) throw new Error('empty');
+    await loadLogo(); try { await Promise.all([document.fonts.load('400 40px Anton'), document.fonts.load('400 40px "Inter Tight"'), document.fonts.load('500 40px "Inter Tight"'), document.fonts.load('700 40px "Inter Tight"')]); } catch (_) {}
+    const cv = document.createElement('canvas'); window.IVInvoice.draw(cv, invModel(), { width: 1654, dpr: 1, logo });
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.93)); const jpeg = new Uint8Array(await blob.arrayBuffer());
+    const links = window.IVInvoice.draw(document.createElement('canvas'), invModel(), { width: 400, dpr: 1, logo }).links;
+    const pdf = P.buildImagePdf(jpeg, cv.width, cv.height, links, { title: `Invoice ${cur.number} - ${cur.client.name || ''}`, author: settings.name || 'Implify Visuals' });
+    return new File([pdf], `Implify-Visuals-Invoice-${cur.number.replace(/[^A-Za-z0-9._-]/g, '-')}.pdf`, { type: 'application/pdf' });
   }
   function saveFile(f) { const url = URL.createObjectURL(f), a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 5000); }
   function validate() {
@@ -220,7 +218,7 @@
   document.querySelectorAll('.tab').forEach((b) => b.onclick = () => tab(b.dataset.tab));
 
   let started = false;
-  function init() { if (started) return; started = true; invoices = read(LS.inv, []); cur = blank(); fillForm(); $('listCount').textContent = invoices.length; loadLogo(); }
+  function init() { if (started) return; started = true; invoices = read(LS.inv, []); cur = blank(); fillForm(); $('listCount').textContent = invoices.length; loadLogo().then(() => drawPreview()); }
   window.addEventListener('pageshow', () => {});
   boot();
 })();
