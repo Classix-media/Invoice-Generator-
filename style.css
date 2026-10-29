@@ -196,3 +196,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin:0;padding:0;flex:none
 select{text-overflow:ellipsis;padding-right:34px;background-position:right 12px center}
 label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:360px){.row2{grid-template-columns:minmax(0,1fr)!important}}
+
+/* ===== v15: spacing between side-by-side fields ===== */
+.row2,.row2 .row2,.item .row2{column-gap:16px!important}
+@media(max-width:480px){.row2,.row2 .row2,.item .row2{column-gap:14px!important}}
