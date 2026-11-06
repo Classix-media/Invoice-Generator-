@@ -244,6 +244,36 @@
     renderStatus();
   };
 
+  /* ---------- automatic payment sync ---------- */
+  let syncing = false, lastSync = 0;
+  async function syncPayments(force) {
+    if (syncing || !started || $('appView').hidden || (!force && Date.now() - lastSync < 8000)) return;
+    const todo = invoices.filter((x) => x && x.paymentRef && x.status !== 'paid' && x.status !== 'cancelled');
+    if (!todo.length) return;
+    syncing = true; lastSync = Date.now(); let changed = 0;
+    try {
+      for (const x of todo) {
+        let r; try { r = await api('/api/paystack-check', { reference: x.paymentRef, amount: C.compute(x).total / 100, currency: x.currency, invoiceNo: x.number }); } catch (_) { continue; }
+        if (r.status === 401) { showLogin('Session expired. Please log in again.'); break; }
+        if (r.ok && r.j.paid) {
+          const when = r.j.paid_at || new Date().toISOString();
+          const k = invoices.findIndex((y) => y.id === x.id);
+          if (k >= 0) { invoices[k].status = 'paid'; invoices[k].paidAt = when; invoices[k].updatedAt = Date.now(); }
+          if (cur && cur.id === x.id) { cur.status = 'paid'; cur.paidAt = when; }
+          changed++;
+        }
+      }
+    } finally { syncing = false; }
+    if (changed) {
+      write(LS.inv, invoices); $('listCount').textContent = invoices.length;
+      if (!$('tabDash').hidden) renderDash(); if (!$('tabList').hidden) renderList(); if (cur) refresh();
+      toast(changed === 1 ? 'Payment received. Invoice marked as paid.' : changed + ' payments received. Invoices marked as paid.');
+    }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPayments(); });
+  window.addEventListener('focus', () => syncPayments());
+  setInterval(() => { if (!document.hidden) syncPayments(); }, 20000);
+
   /* ---------- settings ---------- */
   function fillSettings() { $('sName').value = settings.name; $('sEmail').value = settings.email; $('sPhone').value = settings.phone; $('sPay').value = settings.paymentDetails; $('sTerms').value = settings.terms; $('sCur').value = settings.currency; $('sNext').value = settings.next; }
   $('saveSettings').onclick = () => { const n = parseInt($('sNext').value, 10);
@@ -256,10 +286,10 @@
   /* ---------- tabs ---------- */
   function tab(t) { document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
     $('tabDash').hidden = t !== 'dash'; if (t === 'dash') renderDash(); $('tabNew').hidden = t !== 'new'; $('tabList').hidden = t !== 'list'; $('tabSettings').hidden = t !== 'settings'; if (t === 'list') renderList(); if (t === 'settings') fillSettings(); if (t === 'new' && cur) setTimeout(() => refresh(), 0); }
-  document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { tab(b.dataset.tab); window.scrollTo(0, 0); });
+  document.querySelectorAll('.tab').forEach((b) => b.onclick = () => { tab(b.dataset.tab); window.scrollTo(0, 0); syncPayments(true); });
 
   let started = false;
-  function init() { if (started) return; started = true; invoices = read(LS.inv, []); cur = blank(); fillForm(); $('listCount').textContent = invoices.length; loadLogo().then(() => drawPreview()); tab('dash'); }
+  function init() { if (started) return; started = true; invoices = read(LS.inv, []); cur = blank(); fillForm(); $('listCount').textContent = invoices.length; loadLogo().then(() => drawPreview()); tab('dash'); syncPayments(true); }
   window.addEventListener('pageshow', () => {});
   boot();
 })();
