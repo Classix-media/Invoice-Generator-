@@ -40,7 +40,7 @@
     /* frame (identical geometry to the website invoice) */
     rect(0, 0, 100, PAGE, BL); rect(5.4, 7.3, 89.2, 128, '#fff');
     x.beginPath(); x.moveTo(34.7 * u, 0); x.lineTo(W, 0); x.lineTo(W, 33.9 * u); x.lineTo(43.7 * u, 33.9 * u); x.arcTo(34.7 * u, 33.9 * u, 34.7 * u, 24.9 * u, 9 * u); x.lineTo(34.7 * u, 0); x.fillStyle = BL; x.fill();
-    if (logo && logo.complete && logo.naturalWidth) x.drawImage(logo, 13.55 * u, 12 * u, 13 * u, 13 * u);
+    if (logo && logo.complete && logo.naturalWidth) { const lc = document.createElement('canvas'); lc.width = lc.height = Math.max(1, Math.round(13 * u)); const lx = lc.getContext('2d'); lx.drawImage(logo, 0, 0, lc.width, lc.height); lx.globalCompositeOperation = 'source-in'; lx.fillStyle = BL; lx.fillRect(0, 0, lc.width, lc.height); x.drawImage(lc, 13.55 * u, 12 * u, 13 * u, 13 * u); }
     txt(m.biz.name || 'Implify Visuals', 20.05, 28.3, { s: 2.2, w: 400, a: 'center', max: 27 });
 
     /* number pill + dates + title */
