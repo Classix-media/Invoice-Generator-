@@ -100,8 +100,10 @@
       rr(4, y, 54, bh2, 1.5, ok ? BL : '#b45309');
       txt(ok ? 'CLICK HERE TO PAY ONLINE' : 'Payment link required before sending', 31, y + bh2 / 2, { s: ok ? 2 : 1.6, w: 700, c: '#fff', a: 'center', max: 50 });
       if (ok) {
-        links.push({ x: 4, y: y, w: 54, h: bh2, uri: m.payLink });
+        links.unshift({ x: 0, y: 0, w: 100, h: PAGE, uri: m.payLink, bg: true });
+        links.push({ x: 3, y: y - 0.9, w: 56, h: bh2 + 1.8, uri: m.payLink });
         const q = root.IVQR && root.IVQR.encode(m.payLink), qs = 10, qx = 80.5, qy = pillTop;
+        if (q) links.push({ x: qx - 1, y: qy - 3.2, w: qs + 2, h: qs + 4.4, uri: m.payLink });
         if (q) { const mod = qs / q.length; x.fillStyle = '#000'; q.forEach((row, ry) => row.forEach((on, c2) => { if (on) x.fillRect((qx + c2 * mod) * u, (qy + ry * mod) * u, mod * u + 0.6, mod * u + 0.6); })); txt('Scan to pay securely', qx + qs / 2, qy - 1.7, { s: 1.4, w: 500, c: '#222', a: 'center' }); }
       }
       y += bh2 + 1.2 * k;

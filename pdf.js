@@ -11,10 +11,11 @@
     links = links || []; const annots = links.map((_, i) => 6 + i), infoN = 6 + links.length;
     push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
     obj(1, '<</Type/Catalog/Pages 2 0 R>>'); obj(2, '<</Type/Pages/Kids[3 0 R]/Count 1>>');
-    obj(3, `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PW} ${PH}]/Resources<</XObject<</Im0 5 0 R>>>>/Contents 4 0 R${annots.length ? '/Annots[' + annots.map((a) => a + ' 0 R').join(' ') + ']' : ''}>>`);
-    const cs = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`; obj(4, `<</Length ${cs.length}>>\nstream\n${cs}\nendstream`);
+    obj(3, `<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PW} ${PH}]/Resources<</XObject<</Im0 5 0 R>>/Font<</F1 <</Type/Font/Subtype/Type1/BaseFont/Helvetica>>>>>>/Contents 4 0 R${annots.length ? '/Annots[' + annots.map((a) => a + ' 0 R').join(' ') + ']' : ''}>>`);
+    const txtLayer = links.filter((l) => !l.bg).map((l) => { const u = String(l.uri), sz = Math.max(3, Math.min(10, (l.w * U) / (u.length * 0.5))); return `BT 3 Tr /F1 ${f2(sz)} Tf 1 0 0 1 ${f2(l.x * U)} ${f2(PH - (l.y + l.h) * U + 2)} Tm (${esc(u)}) Tj ET`; }).join('\n');
+    const cs = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q` + (txtLayer ? '\n' + txtLayer : ''); obj(4, `<</Length ${cs.length}>>\nstream\n${cs}\nendstream`);
     offs[5] = len; push(`5 0 obj\n<</Type/XObject/Subtype/Image/Width ${iw}/Height ${ih}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${jpeg.length}>>\nstream\n`); push(jpeg); push('\nendstream\nendobj\n');
-    links.forEach((l, i) => obj(annots[i], `<</Type/Annot/Subtype/Link/Rect[${f2(l.x * U)} ${f2(PH - (l.y + l.h) * U)} ${f2((l.x + l.w) * U)} ${f2(PH - l.y * U)}]/Border[0 0 0]/A<</S/URI/URI(${esc(l.uri)})>>>>`));
+    links.forEach((l, i) => obj(annots[i], `<</Type/Annot/Subtype/Link/F 4/Rect[${f2(l.x * U)} ${f2(PH - (l.y + l.h) * U)} ${f2((l.x + l.w) * U)} ${f2(PH - l.y * U)}]/Border[0 0 0]/A<</S/URI/URI(${esc(l.uri)})>>>>`));
     obj(infoN, `<</Title(${esc(info.title || '')})/Author(${esc(info.author || '')})/Producer(Implify Visuals Invoice)>>`);
     const total = infoN + 1, xr = len; push(`xref\n0 ${total}\n0000000000 65535 f \n`);
     for (let i = 1; i < total; i++) push(String(offs[i]).padStart(10, '0') + ' 00000 n \n');

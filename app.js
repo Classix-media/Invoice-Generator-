@@ -103,6 +103,7 @@
   function renderStatus() {
     renderCurFlow(); const s = effStatus(cur), b = $('statusBadge'); { const v = view(); $('sumTotal').textContent = v.fm(v.calc.total); $('sumStatus').innerHTML = `<span class="badge ${s}">${LABEL[s]}</span>`; $('sumDue').textContent = cur.due ? C.dateText(cur.due) : '—'; $('sumClient').textContent = cur.client.name || '—'; } b.textContent = LABEL[s]; b.className = 'badge ' + s;
     $('checkPay').disabled = !(cur.paymentRef && cur.status !== 'paid'); $('makeLink').disabled = cur.status === 'paid';
+    { const hide = cur.status === 'paid', lab = document.querySelector('label[for="payLink"]'); [lab, $('payLink'), $('copyLink'), $('linkHelp')].forEach((el) => { if (el) el.style.display = hide ? 'none' : ''; }); }
     const stale = cur.paymentRef && cur.linkAmount != null && (Math.round(cur.linkAmount * 100) !== view().calc.total || cur.linkCurrency !== cur.currency);
     if (stale) say('linkMsg', 'The total changed after this link was created. Create a new link before sending, or the client will be asked for the old amount.', 'warn');
     else if (cur.paymentLink && !cur.paymentRef) say('linkMsg', 'Manual link: payment cannot be verified here, so this invoice stays “awaiting payment”.', '');
