@@ -6,6 +6,40 @@
   const BL = '#005fff', PAGE = 141.42, SANS = '"Inter Tight","Helvetica Neue",Helvetica,Arial,sans-serif', IMP = 'Impact,Anton,"Haettenschweiler","Arial Narrow Bold",sans-serif';
 
   const validPay = (u) => { try { const p = new URL(u); return p.protocol === 'https:' && /(^|\.)paystack\.(com|shop|co)$/i.test(p.hostname); } catch (_) { return false; } };
+
+  /* Bank logos drawn in code (transparent background). Each returns its width in units; w=true only measures. */
+  function bankLogo(x, u, key, ox, oy, h, measure) { x.save(); try { return bankLogoDraw(x, u, key, ox, oy, h, measure); } finally { x.restore(); } }
+  function bankLogoDraw(x, u, key, ox, oy, h, measure) {
+    const f = (wt, s) => { x.font = `${wt} ${(s * u).toFixed(2)}px ${SANS}`; }, tw = (t, wt, s) => { f(wt, s); return x.measureText(t).width / u; };
+    x.textBaseline = 'middle'; x.textAlign = 'left';
+    if (key === 'grey') {
+      const s = h * 0.82, wd = tw('Grey', 700, s) + 0.06 * h, sym = h * 0.92, W = sym + h * 0.22 + wd; if (measure) return W;
+      const cx = ox + sym / 2, cy = oy + h / 2, R = sym * 0.36; x.save(); x.strokeStyle = '#000'; x.fillStyle = '#000'; x.lineCap = 'butt';
+      x.lineWidth = sym * 0.2 * u; x.beginPath(); x.arc(cx * u, cy * u, R * u, -0.35 * Math.PI, 1.55 * Math.PI, false); x.stroke();
+      x.fillRect((cx - 0.02 * sym) * u, (cy - 0.07 * sym) * u, sym * 0.3 * u, sym * 0.14 * u);
+      f(700, s); x.lineWidth = 0.05 * h * u; x.lineJoin = 'round'; x.strokeText('Grey', (ox + sym + h * 0.22) * u, (oy + h * 0.53) * u); x.fillText('Grey', (ox + sym + h * 0.22) * u, (oy + h * 0.53) * u); x.restore(); return W;
+    }
+    if (key === 'moniepoint') {
+      const s = h * 0.62, a = tw('Monie', 700, s), b2 = tw('point', 400, s), W = h + h * 0.24 + a + b2; if (measure) return W;
+      x.save(); x.fillStyle = '#0a5cf5'; x.beginPath(); const rx = ox * u, ry = oy * u, sz = h * u, rad = h * 0.3 * u; x.moveTo(rx + rad, ry); x.arcTo(rx + sz, ry, rx + sz, ry + sz, rad); x.arcTo(rx + sz, ry + sz, rx, ry + sz, rad); x.arcTo(rx, ry + sz, rx, ry, rad); x.arcTo(rx, ry, rx + sz, ry, rad); x.fill();
+      x.fillStyle = '#fff'; f(700, h * 0.66); x.textAlign = 'center'; x.fillText('M', (ox + h / 2) * u, (oy + h * 0.53) * u);
+      x.textAlign = 'left'; x.fillStyle = '#0d0d0d'; f(700, s); x.fillText('Monie', (ox + h * 1.24) * u, (oy + h * 0.53) * u); f(400, s); x.fillText('point', (ox + h * 1.24 + a) * u, (oy + h * 0.53) * u); x.restore(); return W;
+    }
+    if (key === 'payoneer') {
+      const s = h * 0.74, a = tw('Payoneer', 600, s), W = h * 0.95 + h * 0.2 + a; if (measure) return W;
+      const cx = ox + h * 0.475, cy = oy + h / 2, R = h * 0.36; x.save(); x.lineWidth = h * 0.15 * u; x.lineCap = 'butt';
+      for (let i = 0; i < 48; i++) { const t0 = (i / 48) * 2 * Math.PI - Math.PI / 2, t1 = t0 + (2 * Math.PI / 48) * 1.15; x.strokeStyle = `hsl(${(14 + i * 7.2) % 360},92%,56%)`; x.beginPath(); x.arc(cx * u, cy * u, R * u, t0, t1); x.stroke(); }
+      x.fillStyle = '#26262c'; f(600, s); x.fillText('Payoneer', (ox + h * 1.15) * u, (oy + h * 0.53) * u); x.restore(); return W;
+    }
+    if (key === 'zenith') {
+      const mw = h * 0.7, s = h * 0.27, a = tw('ZENITH', 700, s), W = Math.max(mw, a) + 0.2 * h; if (measure) return W;
+      const px = ox + (W - mw) / 2, py = oy, ph = h * 0.7, P = (pts) => pts.forEach((p, i) => x[i ? 'lineTo' : 'moveTo']((px + p[0] / 100 * mw) * u, (py + p[1] / 100 * ph) * u));
+      x.save(); x.beginPath(); P([[22, 0], [100, 0], [8, 74], [0, 66], [46, 22], [18, 22]]); x.closePath(); x.fillStyle = '#808285'; x.fill();
+      x.beginPath(); P([[4, 100], [98, 22], [92, 60], [100, 72], [96, 100]]); x.closePath(); x.fillStyle = '#ed1c24'; x.fill();
+      x.fillStyle = '#808285'; f(700, s); x.textAlign = 'center'; x.fillText('ZENITH', (ox + W / 2) * u, (oy + h * 0.87) * u); x.restore(); return W;
+    }
+    return 0;
+  }
   function draw(canvas, m, opt) {
     opt = opt || {};
     /* A4 when the content fits; otherwise the page grows taller (up to MAXEXT units) so nothing is cramped. */
@@ -119,10 +153,10 @@
     if (m.paid) block('PAYMENT RECEIVED', ['Thank you. This invoice has been paid in full.'].concat(m.paymentRef ? ['Reference: ' + m.paymentRef] : []));
     else if (m.bank) {
       const b = m.bank, rows = b.rows || [], nl = b.note ? wrap(b.note, 400, 1.7, 84) : [], cr = Math.ceil(rows.length / 2);
-      const lg = b.logo && b.logo.complete && b.logo.naturalWidth ? b.logo : null, lx = lg ? 1.4 : 0;
+      const lg = b.logo || null, lx = lg ? 1.4 : 0;
       const ch = 1.6 + 3.8 + lx + cr * 6.8 + (nl.length ? nl.length * 2.5 + 1.2 : 0) + 1.4;
       y += 1.2; rr(4, y, 92, ch, 2, '#eef3ff'); txt(b.title, 7, y + 3.6, { s: 1.7, w: 700, c: BL });
-      if (lg) { const lh = 6.4, lw = Math.min(30, lh * lg.naturalWidth / lg.naturalHeight), lxp = (96 - 2.4 - lw) * u, lyp = (y + 1.6) * u; x.save(); x.beginPath(); if (x.roundRect) x.roundRect(lxp, lyp, lw * u, lh * u, 0.9 * u); else x.rect(lxp, lyp, lw * u, lh * u); x.clip(); x.drawImage(lg, lxp, lyp, lw * u, lh * u); x.restore(); }
+      if (lg) { const lh = 6.4, lw = Math.min(34, bankLogo(x, u, lg, 0, 0, lh, true)); bankLogo(x, u, lg, 96 - 2.4 - lw, y + 1.6, lh, false); }
       const r0 = y + 8.4 + lx;
       rows.forEach((rw, i) => { const cx2 = i % 2 ? 51 : 7, cy = r0 + Math.floor(i / 2) * 6.8; txt(rw[0], cx2, cy, { s: 1.3, w: 600, c: '#5b6b8c' }); txt(rw[1], cx2, cy + 2.9, { s: 2, w: 600, c: '#111', max: 41 }); });
       nl.forEach((t, i) => txt(t, 7, r0 + cr * 6.8 - 1.4 + i * 2.5 + 1, { s: 1.7, c: '#333' }));
