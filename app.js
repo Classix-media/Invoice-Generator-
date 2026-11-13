@@ -9,8 +9,11 @@
     GBP: [['name', 'Account name', 'ACCOUNT NAME'], ['bank', 'Bank name', 'BANK'], ['sort', 'Sort code', 'SORT CODE'], ['acct', 'Account number', 'ACCOUNT NUMBER'], ['iban', 'IBAN', 'IBAN'], ['swift', 'SWIFT / BIC', 'SWIFT / BIC'], ['ref', 'Payment reference', 'REFERENCE']]
   };
   const isBankOnly = (c) => c === 'EUR' || c === 'GBP';
-  /* bank logos are drawn in code (invoice-render.js); matched by name, any capitals */
-  const bankLogoFor = (name) => { const n = String(name || '').toLowerCase(); return ['zenith', 'payoneer', 'grey', 'moniepoint'].find((k) => n.includes(k)) || null; };
+  /* bank logos: to add a bank, put its transparent PNG in images/banks/ and add a line here (matched by name, any capitals) */
+  const BANK_LOGOS = { zenith: 'images/banks/zenith.png', payoneer: 'images/banks/payoneer.png', grey: 'images/banks/grey.png', moniepoint: 'images/banks/moniepoint.png' };
+  const bankImgs = {};
+  const bankLogoFor = (name) => { const n = String(name || '').toLowerCase(), k = Object.keys(BANK_LOGOS).find((x) => n.includes(x)); return k && bankImgs[k] && bankImgs[k].complete && bankImgs[k].naturalWidth ? bankImgs[k] : null; };
+  const loadBankLogos = () => Promise.all(Object.keys(BANK_LOGOS).map((k) => new Promise((res) => { if (bankImgs[k]) return res(); const im = new Image(); im.onload = () => { bankImgs[k] = im; res(); }; im.onerror = res; im.src = BANK_LOGOS[k]; })));
   const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (_) { return d; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (_) { toast('Could not save on this browser (storage full or blocked).'); return false; } };
   let settings = Object.assign({}, DEFAULTS, read(LS.set, {})), invoices = read(LS.inv, []), cur = null, logo = null, filter = 'all';
@@ -114,7 +117,7 @@
   }
   let rz; try { new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(drawPreview); }).observe($('invWrap')); } catch (_) {}
   const ensureFonts = () => Promise.all(['400 20px Anton', '400 20px "Inter Tight"', '500 20px "Inter Tight"', '600 20px "Inter Tight"', '700 20px "Inter Tight"'].map((f) => document.fonts.load(f))).then(() => document.fonts.ready).catch(() => {});
-  ensureFonts().then(() => drawPreview());
+  ensureFonts().then(() => drawPreview()); loadBankLogos().then(() => { if (cur) drawPreview(); });
   function renderStatus() {
     renderCurFlow(); const s = effStatus(cur), b = $('statusBadge'); { const v = view(); $('sumTotal').textContent = v.fm(v.calc.total); $('sumStatus').innerHTML = `<span class="badge ${s}">${LABEL[s]}</span>`; $('sumDue').textContent = cur.due ? C.dateText(cur.due) : '—'; $('sumClient').textContent = cur.client.name || '—'; } b.textContent = LABEL[s]; b.className = 'badge ' + s;
     $('checkPay').disabled = !(cur.paymentRef && cur.status !== 'paid'); $('makeLink').disabled = cur.status === 'paid';
@@ -209,7 +212,7 @@
   }
   async function makePdf() {
     if (!cur.items.some((it) => (it.desc || '').trim())) throw new Error('empty');
-    await loadLogo(); await ensureFonts();
+    await loadLogo(); await loadBankLogos(); await ensureFonts();
     const cv = document.createElement('canvas'); window.IVInvoice.draw(cv, invModel(), { width: 1654, dpr: 1, logo });
     const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.93)); const jpeg = new Uint8Array(await blob.arrayBuffer());
     const links = window.IVInvoice.draw(document.createElement('canvas'), invModel(), { width: 400, dpr: 1, logo }).links;
