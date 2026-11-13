@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 <script>try{var t=localStorage.getItem('ivgen.theme')||'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
 <body>
@@ -67,7 +67,7 @@
     <div class="card">
       <div class="sec"><span class="no">02</span><h2>Invoice details</h2></div>
       <div class="row2"><div><label for="iNum">Invoice number</label><input id="iNum" autocomplete="off"></div>
-      <div><label for="iCur">Currency</label><select id="iCur"><option value="NGN">₦ Nigerian naira (NGN)</option><option value="USD">$ US dollars (USD)</option></select></div></div>
+      <div><label for="iCur">Currency</label><select id="iCur"><option value="NGN">₦ Nigerian naira (NGN)</option><option value="USD">$ US dollars (USD)</option><option value="EUR">€ Euro (EUR)</option><option value="GBP">£ British pound (GBP)</option></select></div></div>
       <div class="row2"><div><label for="iIssue">Issue date</label><input id="iIssue" type="date"></div>
       <div><label for="iDue">Payment due date</label><input id="iDue" type="date"></div></div>
       <p class="msg warn" id="numWarn" hidden></p>
@@ -89,6 +89,7 @@
     <div class="card">
       <div class="sec"><span class="no">04</span><h2>Payment</h2></div>
       <p class="muted small">Status: <span id="statusBadge" class="badge"></span></p>
+      <div id="payPaystack">
       <label for="payLink">Paystack payment link</label>
       <input id="payLink" inputmode="url" autocomplete="off" placeholder="https://checkout.paystack.com/…  or paste your own link">
       <div class="btns g2">
@@ -98,6 +99,14 @@
       </div>
       <p class="muted small" id="linkHelp">Links created here are checked automatically. A link you paste yourself cannot be verified here, so the invoice stays “awaiting payment”.</p>
       <p class="msg" id="linkMsg" role="status"></p>
+      </div>
+      <div id="bankSwitchBox">
+        <label class="chk"><input type="checkbox" id="iBank"> Show bank details on this invoice</label>
+        <p class="muted small" id="bankHelp"></p>
+      </div>
+      <div class="btns g2" style="margin-top:.75rem"><button type="button" class="btn" id="markPaid">Mark as paid</button></div>
+      <label for="paidRef" id="paidRefLab">Payment reference (optional, printed on the paid invoice)</label><input id="paidRef" autocomplete="off" placeholder="e.g. bank alert reference">
+      <p class="msg" id="payMsg" role="status"></p>
     </div>
 
   </section>
@@ -142,10 +151,13 @@
     <h2>Business details (shown on every invoice)</h2>
     <label for="sName">Business name</label><input id="sName">
     <div class="row2"><div><label for="sEmail">Email</label><input id="sEmail" type="email"></div><div><label for="sPhone">Phone / WhatsApp</label><input id="sPhone"></div></div>
-    <label for="sPay">Payment details (bank transfer)</label>
-    <textarea id="sPay" rows="4" placeholder="Bank: …&#10;Account name: …&#10;Account number: …"></textarea>
+    <h2 style="margin-top:1rem">Bank details (shown on invoices)</h2>
+    <p class="muted small">Fill what applies to each currency. Empty fields are not printed. EUR and GBP invoices always show this card; NGN and USD show it only when you switch it on for that invoice.</p>
+    <div id="bankSettings"></div>
+    <label for="sPay">Extra payment note (optional, added inside the bank card)</label>
+    <textarea id="sPay" rows="3" placeholder="e.g. Please send the transfer receipt on WhatsApp"></textarea>
     <label for="sTerms">Extra note at the bottom (optional)</label><textarea id="sTerms" rows="2"></textarea>
-    <div class="row2"><div><label for="sCur">Default currency</label><select id="sCur"><option>NGN</option><option>USD</option></select></div>
+    <div class="row2"><div><label for="sCur">Default currency</label><select id="sCur"><option>NGN</option><option>USD</option><option>EUR</option><option>GBP</option></select></div>
     <div><label for="sNext">Next invoice number</label><input id="sNext" inputmode="numeric"></div></div>
     <button type="button" class="btn primary" id="saveSettings">Save settings</button>
     <p class="msg" id="setMsg" role="status"></p>
@@ -158,6 +170,6 @@
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="calc.js?v=5"></script><script src="qr.js?v=5"></script><script src="invoice-render.js?v=7"></script><script src="pdf.js?v=7"></script><script src="app.js?v=7"></script>
+<script src="calc.js?v=6"></script><script src="qr.js?v=5"></script><script src="invoice-render.js?v=9"></script><script src="pdf.js?v=8"></script><script src="app.js?v=9"></script>
 </body>
 </html>

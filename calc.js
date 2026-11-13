@@ -19,7 +19,7 @@
     return { lines, subtotal, discount, tax, total: taxable + tax, warnings };
   }
   const fmt = (minor, cur) => { const v = minor / 100; try { return new Intl.NumberFormat(cur === 'NGN' ? 'en-NG' : 'en-US', { style: 'currency', currency: cur }).format(v); } catch (_) { return (cur === 'NGN' ? '₦' : '$') + v.toFixed(2); } };
-  const fmtPdf = (minor, cur) => (cur === 'NGN' ? 'NGN ' : '$') + (minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPdf = (minor, cur) => ({ NGN: 'NGN ', USD: '$', EUR: '\u20ac', GBP: '\u00a3' }[cur] || '$') + (minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dateText = (iso) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${m[3]} ${MON[+m[2] - 1] || ''} ${m[1]}` : ''; };
   root.IVCalc = { compute, fmt, fmtPdf, dateText, num, toMinor };

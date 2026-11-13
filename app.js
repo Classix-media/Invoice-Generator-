@@ -1,7 +1,19 @@
 (function () {
   const $ = (id) => document.getElementById(id), C = window.IVCalc, P = window.IVPdf;
   const LS = { inv: 'ivgen.invoices', set: 'ivgen.settings', theme: 'ivgen.theme' };
-  const DEFAULTS = { name: 'Implify Visuals', email: 'chibuikeisrael587@gmail.com', phone: '+234 812 198 6430', paymentDetails: '', terms: '', currency: 'NGN', next: 1 };
+  const DEFAULTS = { name: 'Implify Visuals', email: 'chibuikeisrael587@gmail.com', phone: '+234 812 198 6430', paymentDetails: '', bank: {}, terms: '', currency: 'NGN', next: 1 };
+  const BANK = {
+    NGN: [['name', 'Account name', 'ACCOUNT NAME'], ['bank', 'Bank name', 'BANK'], ['acct', 'Account number', 'ACCOUNT NUMBER'], ['ref', 'Payment reference', 'REFERENCE']],
+    USD: [['name', 'Account name', 'ACCOUNT NAME'], ['bank', 'Bank name', 'BANK'], ['acct', 'Account number', 'ACCOUNT NUMBER'], ['routing', 'Routing (ACH) number', 'ROUTING (ACH)'], ['swift', 'SWIFT / BIC', 'SWIFT / BIC'], ['type', 'Account type (optional)', 'ACCOUNT TYPE'], ['addr', 'Bank address (optional)', 'BANK ADDRESS'], ['ref', 'Payment reference', 'REFERENCE']],
+    EUR: [['name', 'Account name', 'ACCOUNT NAME'], ['bank', 'Bank name', 'BANK'], ['iban', 'IBAN', 'IBAN'], ['swift', 'BIC / SWIFT', 'BIC / SWIFT'], ['addr', 'Bank address (optional)', 'BANK ADDRESS'], ['ref', 'Payment reference', 'REFERENCE']],
+    GBP: [['name', 'Account name', 'ACCOUNT NAME'], ['bank', 'Bank name', 'BANK'], ['sort', 'Sort code', 'SORT CODE'], ['acct', 'Account number', 'ACCOUNT NUMBER'], ['iban', 'IBAN', 'IBAN'], ['swift', 'SWIFT / BIC', 'SWIFT / BIC'], ['ref', 'Payment reference', 'REFERENCE']]
+  };
+  const isBankOnly = (c) => c === 'EUR' || c === 'GBP';
+  /* bank logos: to add a bank, put its logo in images/banks/ and add a line here (matched by name, any capitals) */
+  const BANK_LOGOS = { zenith: 'images/banks/zenith.png', payoneer: 'images/banks/payoneer.png', grey: 'images/banks/grey.png', moniepoint: 'images/banks/moniepoint.png' };
+  const bankImgs = {};
+  const bankLogoFor = (name) => { const n = String(name || '').toLowerCase(), k = Object.keys(BANK_LOGOS).find((x) => n.includes(x)); return k && bankImgs[k] && bankImgs[k].complete && bankImgs[k].naturalWidth ? bankImgs[k] : null; };
+  const loadBankLogos = () => Promise.all(Object.keys(BANK_LOGOS).map((k) => new Promise((res) => { if (bankImgs[k]) return res(); const im = new Image(); im.onload = () => { bankImgs[k] = im; res(); }; im.onerror = res; im.src = BANK_LOGOS[k]; })));
   const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (_) { return d; } };
   const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (_) { toast('Could not save on this browser (storage full or blocked).'); return false; } };
   let settings = Object.assign({}, DEFAULTS, read(LS.set, {})), invoices = read(LS.inv, []), cur = null, logo = null, filter = 'all';
@@ -46,7 +58,7 @@
     const t = today();
     return { id: uid(), number: pad(settings.next), status: 'draft', currency: settings.currency || 'NGN', issue: t, due: addDays(t, 7),
       client: { name: '', email: '', phone: '', business: '' }, items: [{ desc: '', pkg: '', qty: '1', price: '' }], notes: '', discountType: 'amount', discountValue: '', taxPct: '',
-      paymentLink: '', paymentRef: '', linkAmount: null, linkCurrency: '', paidAt: '', createdAt: Date.now(), updatedAt: Date.now(), autoNumber: true };
+      showBank: false, manualRef: '', paymentLink: '', paymentRef: '', linkAmount: null, linkCurrency: '', paidAt: '', createdAt: Date.now(), updatedAt: Date.now(), autoNumber: true };
   }
   const effStatus = (inv) => (inv.status === 'awaiting' && inv.due && inv.due < today() ? 'overdue' : inv.status);
   const LABEL = { draft: 'Draft', awaiting: 'Awaiting payment', paid: 'Paid', overdue: 'Overdue', cancelled: 'Cancelled' };
@@ -55,7 +67,7 @@
     const i = cur; i.client = { name: $('cName').value.trim(), email: $('cEmail').value.trim(), phone: $('cPhone').value.trim(), business: $('cBiz').value.trim() };
     i.number = $('iNum').value.trim() || i.number; i.currency = $('iCur').value; i.issue = $('iIssue').value; i.due = $('iDue').value;
     i.items = [...document.querySelectorAll('#items .item')].map((el) => ({ desc: el.querySelector('.d').value, pkg: el.querySelector('.p').value, qty: el.querySelector('.q').value, price: el.querySelector('.r').value }));
-    i.notes = $('iNotes').value; i.discountType = $('dType').value; i.discountValue = $('dVal').value; i.taxPct = $('tPct').value; i.paymentLink = $('payLink').value.trim();
+    i.notes = $('iNotes').value; i.discountType = $('dType').value; i.discountValue = $('dVal').value; i.taxPct = $('tPct').value; i.paymentLink = $('payLink').value.trim(); i.showBank = $('iBank').checked; if (i.status === 'paid') i.manualRef = $('paidRef').value.trim();
   }
   function itemHtml(it, idx, n) {
     return `<div class="item"><button type="button" class="rm" ${n < 2 ? 'hidden' : ''}>Remove</button><strong class="small muted">Line item ${idx + 1}</strong>
@@ -70,11 +82,17 @@
   function fillForm() {
     const i = cur; $('cName').value = i.client.name; $('cEmail').value = i.client.email; $('cPhone').value = i.client.phone; $('cBiz').value = i.client.business;
     $('iNum').value = i.number; $('iCur').value = i.currency; $('iIssue').value = i.issue; $('iDue').value = i.due; $('iNotes').value = i.notes;
-    $('dType').value = i.discountType; $('dVal').value = i.discountValue; $('tPct').value = i.taxPct; $('payLink').value = i.paymentLink; renderItems(); refresh();
+    $('dType').value = i.discountType; $('dVal').value = i.discountValue; $('tPct').value = i.taxPct; $('payLink').value = i.paymentLink; $('iBank').checked = !!i.showBank; $('paidRef').value = i.manualRef || ''; renderItems(); refresh();
   }
 
   /* ---------- preview + totals ---------- */
   const view = () => { const calc = C.compute(cur); return { calc, fm: (m) => C.fmt(m, cur.currency) }; };
+  function bankModel() {
+    const c = cur.currency; if (!(isBankOnly(c) || cur.showBank) || cur.status === 'paid') return null;
+    const cfg = (settings.bank && settings.bank[c]) || {}, rows = (BANK[c] || []).filter((f) => (cfg[f[0]] || '').trim()).map((f) => [f[2], cfg[f[0]].trim()]);
+    const note = [cfg.note, settings.paymentDetails].map((s) => (s || '').trim()).filter(Boolean).join('\n');
+    return rows.length || note ? { title: 'PAY BY BANK TRANSFER (' + c + ')', rows, note, logo: bankLogoFor(cfg.bank) } : null;
+  }
   function invModel() {
     const { calc, fm } = view(), paid = cur.status === 'paid';
     const bands = [['SUBTOTAL:', fm(calc.subtotal)], ['DISCOUNT:', calc.discount > 0 ? '-' + fm(calc.discount) : '—']];
@@ -84,7 +102,7 @@
       biz: { name: settings.name, phone: settings.phone, email: settings.email }, client: cur.client,
       items: cur.items.map((it, k) => ({ desc: it.desc, pkg: it.pkg, qty: String(C.num(it.qty)), price: fm(C.toMinor(it.price)), line: fm(calc.lines[k]) })),
       notes: cur.notes, bands, gray: 'Payment is required before project work begins.' + (cur.status === 'cancelled' ? ' This invoice has been cancelled.' : ''),
-      payLink: cur.paymentLink, paymentRef: cur.paymentRef, payDetails: (settings.paymentDetails || '').trim(), terms: settings.terms };
+      payLink: isBankOnly(cur.currency) ? '' : cur.paymentLink, showPay: !isBankOnly(cur.currency), paymentRef: cur.paymentRef || cur.manualRef || '', bank: bankModel(), terms: settings.terms };
   }
   function drawPreview() {
     const cv = $('invCanvas'), wrap = $('invWrap'); if (!cv || !cur) return;
@@ -99,10 +117,14 @@
   }
   let rz; try { new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(drawPreview); }).observe($('invWrap')); } catch (_) {}
   const ensureFonts = () => Promise.all(['400 20px Anton', '400 20px "Inter Tight"', '500 20px "Inter Tight"', '600 20px "Inter Tight"', '700 20px "Inter Tight"'].map((f) => document.fonts.load(f))).then(() => document.fonts.ready).catch(() => {});
-  ensureFonts().then(() => drawPreview());
+  ensureFonts().then(() => drawPreview()); loadBankLogos().then(() => { if (cur) drawPreview(); });
   function renderStatus() {
     renderCurFlow(); const s = effStatus(cur), b = $('statusBadge'); { const v = view(); $('sumTotal').textContent = v.fm(v.calc.total); $('sumStatus').innerHTML = `<span class="badge ${s}">${LABEL[s]}</span>`; $('sumDue').textContent = cur.due ? C.dateText(cur.due) : '—'; $('sumClient').textContent = cur.client.name || '—'; } b.textContent = LABEL[s]; b.className = 'badge ' + s;
     $('checkPay').disabled = !(cur.paymentRef && cur.status !== 'paid'); $('makeLink').disabled = cur.status === 'paid';
+    { const bo = isBankOnly(cur.currency), pd = cur.status === 'paid'; $('payPaystack').style.display = bo ? 'none' : ''; $('bankSwitchBox').style.display = bo || pd ? 'none' : ''; $('iBank').checked = !!cur.showBank;
+      $('bankHelp').textContent = bo ? '' : 'Fills in from Settings. Leave it off to keep the invoice as it is.';
+      const mp = $('markPaid'); mp.textContent = pd ? 'Mark as unpaid (undo)' : 'Mark as paid'; mp.disabled = cur.status === 'cancelled';
+      $('paidRef').style.display = $('paidRefLab').style.display = pd && !cur.paymentRef ? '' : 'none'; }
     { const hide = cur.status === 'paid', lab = document.querySelector('label[for="payLink"]'); [lab, $('payLink'), $('copyLink'), $('linkHelp')].forEach((el) => { if (el) el.style.display = hide ? 'none' : ''; }); }
     const stale = cur.paymentRef && cur.linkAmount != null && (Math.round(cur.linkAmount * 100) !== view().calc.total || cur.linkCurrency !== cur.currency);
     if (stale) say('linkMsg', 'The total changed after this link was created. Create a new link before sending, or the client will be asked for the old amount.', 'warn');
@@ -159,7 +181,7 @@
     return `<div class="li" data-id="${esc(x.id)}"><div class="li-top"><span class="ico">${esc(nm.trim().charAt(0).toUpperCase() || '?')}</span><div class="li-m"><strong>${esc(nm)}</strong><span class="muted small">${esc(what)}</span></div><b class="amt">${esc(C.fmt(tot, x.currency))}</b></div>
       <div class="dots"></div><div class="li-bot"><span class="num">${esc(x.number)}</span><span class="badge ${s}">${LABEL[s]}</span><span class="dt">${esc(C.dateText(x.issue))}</span></div>
       <div class="mini"><i style="width:${stageOf(x) * 25}%"></i></div>
-      <div class="btns"><button class="btn" data-a="edit">Edit</button><button class="btn" data-a="pdf">PDF</button><button class="btn ghost" data-a="cancel">${x.status === 'cancelled' ? 'Reopen' : 'Cancel'}</button><button class="btn ghost" data-a="del">Delete</button></div></div>`;
+      <div class="btns"><button class="btn" data-a="edit">Edit</button><button class="btn" data-a="pdf">PDF</button>${x.status === 'cancelled' ? '' : x.status === 'paid' ? '<button class="btn ghost" data-a="unpaid">Undo paid</button>' : '<button class="btn ghost" data-a="paid">Mark paid</button>'}<button class="btn ghost" data-a="cancel">${x.status === 'cancelled' ? 'Reopen' : 'Cancel'}</button><button class="btn ghost" data-a="del">Delete</button></div></div>`;
   }
   function renderList() {
     $('listCount').textContent = invoices.length; const q = $('q').value.trim().toLowerCase();
@@ -175,6 +197,8 @@
     const x = invoices.find((v) => v.id === id); if (!x) return;
     if (a === 'edit') { cur = JSON.parse(JSON.stringify(x)); fillForm(); tab('new'); window.scrollTo(0, 0); }
     else if (a === 'pdf') { const keep = cur; cur = x; try { await downloadPdf(); } finally { cur = keep; } }
+    else if (a === 'paid') { if (x.status === 'cancelled') return toast('Reopen this invoice first.'); if (!confirm('Mark invoice ' + x.number + ' as paid?')) return; x.status = 'paid'; x.paidAt = new Date().toISOString(); x.updatedAt = Date.now(); write(LS.inv, invoices); renderList(); }
+    else if (a === 'unpaid') { if (!confirm('Undo paid on invoice ' + x.number + '?')) return; x.status = 'awaiting'; x.paidAt = ''; x.manualRef = ''; x.updatedAt = Date.now(); write(LS.inv, invoices); renderList(); }
     else if (a === 'cancel') { if (x.status === 'paid') return toast('A paid invoice cannot be cancelled.'); x.status = x.status === 'cancelled' ? 'draft' : 'cancelled'; x.updatedAt = Date.now(); write(LS.inv, invoices); renderList(); }
     else if (a === 'del') { if (confirm('Delete invoice ' + x.number + ' from this device? This cannot be undone.')) { invoices = invoices.filter((v) => v.id !== id); write(LS.inv, invoices); renderList(); } }
   }
@@ -188,7 +212,7 @@
   }
   async function makePdf() {
     if (!cur.items.some((it) => (it.desc || '').trim())) throw new Error('empty');
-    await loadLogo(); await ensureFonts();
+    await loadLogo(); await loadBankLogos(); await ensureFonts();
     const cv = document.createElement('canvas'); window.IVInvoice.draw(cv, invModel(), { width: 1654, dpr: 1, logo });
     const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.93)); const jpeg = new Uint8Array(await blob.arrayBuffer());
     const links = window.IVInvoice.draw(document.createElement('canvas'), invModel(), { width: 400, dpr: 1, logo }).links;
@@ -202,7 +226,7 @@
   async function downloadPdf() { const f = await makePdf(); saveFile(f); return f; }
   $('genPdf').onclick = async () => {
     readForm(); const err = validate(); if (err) return say('actMsg', err, 'bad');
-    try { const f = await makePdf(); persist('awaiting'); saveFile(f); const hasLink = /^https:\/\/([a-z0-9-]+\.)*paystack\.(com|shop|co)\b/i.test(cur.paymentLink || ''); say('actMsg', hasLink ? `Downloaded ${f.name}. Saved as “${LABEL[effStatus(cur)]}”.` : `Downloaded ${f.name}, but it has NO payment link. Create or paste a Paystack link first, then download again.`, hasLink ? 'ok' : 'warn'); }
+    try { const f = await makePdf(); persist('awaiting'); saveFile(f); const hasLink = isBankOnly(cur.currency) || /^https:\/\/([a-z0-9-]+\.)*paystack\.(com|shop|co)\b/i.test(cur.paymentLink || ''); say('actMsg', hasLink ? `Downloaded ${f.name}. Saved as “${LABEL[effStatus(cur)]}”.` : `Downloaded ${f.name}, but it has NO payment link. Create or paste a Paystack link first, then download again.`, hasLink ? 'ok' : 'warn'); }
     catch (e) { say('actMsg', 'Could not create the PDF. Please try again.', 'bad'); }
   };
   const waText = () => { const t = view(); return `Hello ${cur.client.name || ''}, here is invoice ${cur.number} from ${settings.name} for ${C.fmtPdf(t.calc.total, cur.currency)}${cur.due ? ', due ' + C.dateText(cur.due) : ''}.${cur.paymentLink && cur.status !== 'paid' ? '\nPay securely online: ' + cur.paymentLink : ''}\nThank you.`; };
@@ -276,10 +300,15 @@
   setInterval(() => { if (!document.hidden) syncPayments(); }, 20000);
 
   /* ---------- settings ---------- */
-  function fillSettings() { $('sName').value = settings.name; $('sEmail').value = settings.email; $('sPhone').value = settings.phone; $('sPay').value = settings.paymentDetails; $('sTerms').value = settings.terms; $('sCur').value = settings.currency; $('sNext').value = settings.next; }
+  function buildBank() { const box = $('bankSettings'); if (!box || box.dataset.built) return; box.dataset.built = 1;
+    box.innerHTML = Object.keys(BANK).map((c) => `<details class="bk"><summary>${c} bank details</summary>${BANK[c].map((f) => `<label>${f[1]}</label><input data-bk="${c}.${f[0]}" autocomplete="off">`).join('')}<label>Extra line (optional)</label><input data-bk="${c}.note" autocomplete="off" placeholder="e.g. Pay by ACH or wire"></details>`).join(''); }
+  function fillBank() { buildBank(); document.querySelectorAll('[data-bk]').forEach((el) => { const [c, k] = el.dataset.bk.split('.'); el.value = ((settings.bank || {})[c] || {})[k] || ''; }); }
+  function readBank() { const o = {}; document.querySelectorAll('[data-bk]').forEach((el) => { const [c, k] = el.dataset.bk.split('.'); (o[c] = o[c] || {})[k] = el.value.trim(); }); return o; }
+  function fillSettings() { $('sName').value = settings.name; $('sEmail').value = settings.email; $('sPhone').value = settings.phone; $('sPay').value = settings.paymentDetails; fillBank(); $('sTerms').value = settings.terms; $('sCur').value = settings.currency; $('sNext').value = settings.next; }
   $('saveSettings').onclick = () => { const n = parseInt($('sNext').value, 10);
-    settings = { name: $('sName').value.trim() || 'Implify Visuals', email: $('sEmail').value.trim(), phone: $('sPhone').value.trim(), paymentDetails: $('sPay').value, terms: $('sTerms').value, currency: $('sCur').value, next: Number.isFinite(n) && n > 0 ? n : settings.next };
+    settings = { name: $('sName').value.trim() || 'Implify Visuals', email: $('sEmail').value.trim(), phone: $('sPhone').value.trim(), paymentDetails: $('sPay').value, bank: readBank(), terms: $('sTerms').value, currency: $('sCur').value, next: Number.isFinite(n) && n > 0 ? n : settings.next };
     if (write(LS.set, settings)) { say('setMsg', 'Saved.', 'ok'); if (cur) refresh(); } };
+  $('markPaid').onclick = () => { readForm(); if (cur.status === 'cancelled') return; if (cur.status === 'paid') { if (!confirm('Undo paid for this invoice?')) return; cur.status = 'awaiting'; cur.paidAt = ''; cur.manualRef = ''; } else { if (!confirm('Mark this invoice as paid?')) return; cur.status = 'paid'; cur.paidAt = new Date().toISOString(); cur.manualRef = $('paidRef').value.trim(); } persist(); refresh(); say('payMsg', cur.status === 'paid' ? 'Marked as paid.' : 'Back to awaiting payment.', 'ok'); };
   $('expBtn').onclick = () => { saveFile(new File([JSON.stringify({ settings, invoices }, null, 1)], 'implify-invoices-backup.json', { type: 'application/json' })); };
   $('impFile').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { const d = JSON.parse(await f.text()); if (!Array.isArray(d.invoices)) throw 0;
     const have = new Set(invoices.map((x) => x.id)); d.invoices.forEach((x) => { if (x && x.id && !have.has(x.id)) invoices.push(x); }); write(LS.inv, invoices); renderList(); toast('Backup imported'); } catch (_) { toast('That file is not a valid backup.'); } e.target.value = ''; };

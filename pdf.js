@@ -1,9 +1,10 @@
 /* Implify Visuals invoice PDF writer: wraps the rendered A4 invoice page (JPEG) in a one-page PDF,
    with the payment link kept clickable. Dependency-free. */
 (function (root) {
-  const PW = 595.28, PH = 841.89, U = PW / 100, f2 = (n) => (+n).toFixed(2);
+  const PW = 595.28, U = PW / 100, f2 = (n) => (+n).toFixed(2);
   const esc = (s) => String(s).replace(/[^\x20-\x7e]/g, '?').replace(/([()\\])/g, '\\$1');
   function buildImagePdf(jpeg, iw, ih, links, info) {
+    const PH = +(PW * ih / iw).toFixed(2); // page grows with the invoice (A4 when content fits)
     const enc = (s) => { const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 255; return a; };
     const parts = [], offs = []; let len = 0;
     const push = (d) => { const u8 = typeof d === 'string' ? enc(d) : d; parts.push(u8); len += u8.length; };

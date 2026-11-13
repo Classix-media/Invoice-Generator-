@@ -200,3 +200,7 @@ label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ===== v15: spacing between side-by-side fields ===== */
 .row2,.row2 .row2,.item .row2{column-gap:16px!important}
 @media(max-width:480px){.row2,.row2 .row2,.item .row2{column-gap:14px!important}}
+
+/* v6 bank details + mark paid */
+.chk{display:flex;gap:.6rem;align-items:center;margin-top:.9rem;font-weight:600}.chk input{width:1.15rem;height:1.15rem;accent-color:#005fff}
+details.bk{margin:.6rem 0;padding:.35rem .9rem .8rem;border-radius:.9rem;background:rgba(0,95,255,.06)}details.bk summary{cursor:pointer;font-weight:700;padding:.55rem 0}
