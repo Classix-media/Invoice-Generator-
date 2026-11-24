@@ -207,7 +207,7 @@
   /* ---------- PDF / share ---------- */
   async function loadLogo() {
     if (logo) return logo;
-    await new Promise((res) => { const im = new Image(); im.onload = () => { logo = im; res(); }; im.onerror = res; im.src = 'images/logo.png'; });
+    await new Promise((res) => { const im = new Image(); im.onload = () => { logo = im; res(); }; im.onerror = res; im.src = 'images/logo.png?v=4'; });
     return logo;
   }
   async function makePdf() {
